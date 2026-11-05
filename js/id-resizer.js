@@ -210,6 +210,27 @@ $('sshare').onclick=async()=>{
     else{save(r.blob,r.file);smsg('Sharing isn’t supported here, so the file was downloaded instead.')}
   }catch(e){if(e.name!=='AbortError')smsg('Could not share the sheet.','err')}
 };
+$('sprint').onclick=()=>{
+  if(!layout().max){smsg('Photo is too large for this paper.','err');return}
+  const canvas=$('sheet');
+  const printFrame=document.createElement('iframe');
+  printFrame.style.position='fixed';
+  printFrame.style.width='0';
+  printFrame.style.height='0';
+  printFrame.style.border='0';
+  printFrame.style.visibility='hidden';
+  document.body.appendChild(printFrame);
+  const frameDocument=printFrame.contentDocument;
+  frameDocument.open();
+  frameDocument.write('<!doctype html><html><head><title>Print sheet</title><style>@page{size:'+(landscape?'landscape':'portrait')+';margin:0}html,body{width:100%;height:100%;margin:0}img{width:100%;height:100%;object-fit:contain;display:block}</style></head><body><img alt="ID print sheet"></body></html>');
+  frameDocument.close();
+  const image=frameDocument.querySelector('img');
+  image.onload=()=>setTimeout(()=>{printFrame.contentWindow.focus();printFrame.contentWindow.print();setTimeout(()=>printFrame.remove(),1000)},100);
+  canvas.toBlob(blob=>{
+    image.src=URL.createObjectURL(blob);
+  },'image/png');
+  smsg('Print dialog opened. Choose “100%” scale and disable browser margins.','good');
+};
 [0,3,5,8].forEach(m=>{const b=document.createElement('button');b.textContent=m?m+' mm':'None';b.setAttribute('aria-pressed',m===margin);
   b.onclick=()=>{margin=m;[...$('margins').children].forEach(x=>x.setAttribute('aria-pressed',x===b));renderSheet()};$('margins').appendChild(b)});
 const sv=$('sheet');let sd=null,raf=0;
