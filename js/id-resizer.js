@@ -211,8 +211,11 @@ $('sshare').onclick=async()=>{
   }catch(e){if(e.name!=='AbortError')smsg('Could not share the sheet.','err')}
 };
 $('sprint').onclick=()=>{
-  if(!layout().max){smsg('Photo is too large for this paper.','err');return}
+  const L=layout();
+  if(!L.max){smsg('Photo is too large for this paper.','err');return}
   const canvas=$('sheet');
+  const paperWidth=landscape?PAPERS[paper][2]:PAPERS[paper][1];
+  const paperHeight=landscape?PAPERS[paper][1]:PAPERS[paper][2];
   const printFrame=document.createElement('iframe');
   printFrame.style.position='fixed';
   printFrame.style.width='0';
@@ -222,14 +225,14 @@ $('sprint').onclick=()=>{
   document.body.appendChild(printFrame);
   const frameDocument=printFrame.contentDocument;
   frameDocument.open();
-  frameDocument.write('<!doctype html><html><head><title>Print sheet</title><style>@page{size:'+(landscape?'landscape':'portrait')+';margin:0}html,body{width:100%;height:100%;margin:0}img{width:100%;height:100%;object-fit:contain;display:block}</style></head><body><img alt="ID print sheet"></body></html>');
+  frameDocument.write('<!doctype html><html><head><title>Print sheet</title><style>@page{size:'+paperWidth+'mm '+paperHeight+'mm;margin:0}html,body{width:'+paperWidth+'mm;height:'+paperHeight+'mm;margin:0;padding:0}img{width:'+paperWidth+'mm;height:'+paperHeight+'mm;max-width:none;max-height:none;object-fit:fill;display:block}</style></head><body><img alt="ID print sheet"></body></html>');
   frameDocument.close();
   const image=frameDocument.querySelector('img');
   image.onload=()=>setTimeout(()=>{printFrame.contentWindow.focus();printFrame.contentWindow.print();setTimeout(()=>printFrame.remove(),1000)},100);
   canvas.toBlob(blob=>{
     image.src=URL.createObjectURL(blob);
   },'image/png');
-  smsg('Print dialog opened. Choose “100%” scale and disable browser margins.','good');
+  smsg('Print dialog opened. Use '+PAPERS[paper][0]+' paper, 100% / actual-size scale, and disable browser margins. Printer margins may clip the sheet edges.','good');
 };
 [0,3,5,8].forEach(m=>{const b=document.createElement('button');b.textContent=m?m+' mm':'None';b.setAttribute('aria-pressed',m===margin);
   b.onclick=()=>{margin=m;[...$('margins').children].forEach(x=>x.setAttribute('aria-pressed',x===b));renderSheet()};$('margins').appendChild(b)});
