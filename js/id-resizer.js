@@ -154,9 +154,10 @@ $('zfit').onclick=()=>{view={z:0.01,ox:0,oy:0};drawPrev();renderSheet()};
 // ---- Print sheet ----
 const PAPERS=[['A4 (21 × 29.7 cm)',210,297],['A3 (29.7 × 42 cm)',297,420],['A5 (14.8 × 21 cm)',148,210],['Letter (8.5 × 11 in)',215.9,279.4],['Legal (8.5 × 14 in)',215.9,355.6],['4R (4 × 6 in)',101.6,152.4],['5R (5 × 7 in)',127,177.8],['6R (6 × 8 in)',152.4,203.2],['8R (8 × 10 in)',203.2,254]];
 const GAPS=[0,1,1.5,2,3];
-let paper=0,gap=1.5,count=4,margin=5,pos=null,blk=null,landscape=false;
+const MARGINS=[0,3,5,8];
+let paper=0,gap=1.5,count=4,margin=5,leftMargin=5,pos=null,blk=null,landscape=false;
 function layout(){const pw=size.w*25.4,ph=size.h*25.4,W=landscape?PAPERS[paper][2]:PAPERS[paper][1],H=landscape?PAPERS[paper][1]:PAPERS[paper][2];
-  const cols=Math.max(0,Math.floor((W+gap)/(pw+gap))),rows=Math.max(0,Math.floor((H-margin+gap)/(ph+gap)));return{pw,ph,W,H,cols,rows,max:cols*rows}}
+  const cols=Math.max(0,Math.floor((W-leftMargin+gap)/(pw+gap))),rows=Math.max(0,Math.floor((H-margin+gap)/(ph+gap)));return{pw,ph,W,H,cols,rows,max:cols*rows}}
 function renderSheet(){
   if(!img)return;
   const L=layout(),S=DPI/25.4,cv=$('sheet');
@@ -168,8 +169,8 @@ function renderSheet(){
   blk=null;if(!L.max)return;
   const pc=document.createElement('canvas');draw(pc);
   const used=Math.min(L.cols,count),nr=Math.ceil(count/L.cols),usedW=used*L.pw+(used-1)*gap,usedH=nr*L.ph+(nr-1)*gap;
-  let x0=0,y0=pos?pos.y:margin;
-  x0=Math.max(0,Math.min(L.W-usedW,x0));y0=Math.max(margin,Math.min(L.H-usedH,y0));
+  let x0=pos?pos.x:leftMargin,y0=pos?pos.y:margin;
+  x0=Math.max(leftMargin,Math.min(L.W-usedW,x0));y0=Math.max(margin,Math.min(L.H-usedH,y0));
   if(pos){pos.x=x0;pos.y=y0}
   blk={w:usedW,h:usedH,W:L.W,H:L.H,x:x0,y:y0};
   c.strokeStyle='#b5b5b5';c.lineWidth=2;c.imageSmoothingQuality='high';
@@ -184,6 +185,9 @@ function buildSheetUI(){
   $('gaps').innerHTML='';
   GAPS.forEach(g=>{const b=document.createElement('button');b.textContent=g?g+' mm':'None';
     b.setAttribute('aria-pressed',g===gap);b.onclick=()=>{gap=g;[...$('gaps').children].forEach(x=>x.setAttribute('aria-pressed',x===b));renderSheet()};$('gaps').appendChild(b)});
+  $('leftMargins').innerHTML='';
+  MARGINS.forEach(m=>{const b=document.createElement('button');b.textContent=m?m+' mm':'None';
+    b.setAttribute('aria-pressed',m===leftMargin);b.onclick=()=>{leftMargin=m;pos={x:m,y:pos?pos.y:margin};[...$('leftMargins').children].forEach(x=>x.setAttribute('aria-pressed',x===b));renderSheet()};$('leftMargins').appendChild(b)});
 }
 $('paper').onchange=e=>{paper=+e.target.value;pos=null;renderSheet()};
 $('cnt').oninput=e=>{const v=parseInt(e.target.value,10);if(v>0){count=v;renderSheet()}};
@@ -234,7 +238,7 @@ $('sprint').onclick=()=>{
   },'image/png');
   smsg('Print dialog opened. Use '+PAPERS[paper][0]+' paper, 100% / actual-size scale, and disable browser margins. Printer margins may clip the sheet edges.','good');
 };
-[0,3,5,8].forEach(m=>{const b=document.createElement('button');b.textContent=m?m+' mm':'None';b.setAttribute('aria-pressed',m===margin);
+MARGINS.forEach(m=>{const b=document.createElement('button');b.textContent=m?m+' mm':'None';b.setAttribute('aria-pressed',m===margin);
   b.onclick=()=>{margin=m;[...$('margins').children].forEach(x=>x.setAttribute('aria-pressed',x===b));renderSheet()};$('margins').appendChild(b)});
 const sv=$('sheet');let sd=null,raf=0;
 sv.style.cursor='grab';sv.style.touchAction='none';
@@ -244,7 +248,7 @@ sv.addEventListener('pointerdown',e=>{if(!blk)return;sv.setPointerCapture(e.poin
 sv.addEventListener('pointermove',e=>{if(!sd)return;pos={x:0,y:sd.y+(e.clientY-sd.py)*sd.k};redraw()});
 const sEnd=()=>{sd=null;sv.style.cursor='grab'};
 sv.addEventListener('pointerup',sEnd);sv.addEventListener('pointercancel',sEnd);
-$('pctr').onclick=()=>{if(blk){pos={x:(blk.W-blk.w)/2,y:(blk.H-blk.h)/2};renderSheet()}};
+$('pctr').onclick=()=>{if(blk){pos={x:leftMargin,y:(blk.H-blk.h)/2};renderSheet()}};
 $('ptop').onclick=()=>{pos=null;renderSheet()};
 // ---- Custom size ----
 let isCustom=false,lastU='mm';const F={mm:1/25.4,cm:1/2.54,in:1};
